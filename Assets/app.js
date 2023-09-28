@@ -33,8 +33,13 @@ class AirParticle {
 
 //Class Creations -------------------------------------------------
 let newHand = new Hand();
-let newParticle = new AirParticle(200, 200);
-airParticles.push(newParticle);
+
+for (let i = 0; i < 20; i++){
+  for (let j = 0; j < 20; j++) {
+    let newParticle = new AirParticle(i * 50, j * 50);
+    airParticles.push(newParticle);
+  }
+}
 
 //Draw Function ----------------------------------------------------
 function draw() {
