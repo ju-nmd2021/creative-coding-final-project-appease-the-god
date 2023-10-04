@@ -25,6 +25,7 @@ function setup() {
 
   video = createCapture(VIDEO);
   video.size(640, 480);
+  video.hide();
 
   handpose = ml5.handpose(video, options, modelLoaded);
   handpose.on("hand", (results) => {
@@ -66,8 +67,7 @@ class AirParticle {
 //Draw Function ----------------------------------------------------
 function draw() {
   background(100, 100, 100);
-
-  summonCameraTracking();
+  drawTracking();
   if (newHand) {
     newHand.update();
     newHand.draw(); 
@@ -78,9 +78,13 @@ function draw() {
 }
 
 //Misc Functions ----------------------------------------------------
-function summonCameraTracking() { //cited from garritt's Handpose example: https://codepen.io/pixelkind/pen/BavQawB
+function drawTracking() { //cited from garritt's Handpose example: https://codepen.io/pixelkind/pen/BavQawB
   if (SHOW_CAMERA){
+    push();
+    translate(640, 0);
+    scale(-1,1);
     image(video, 0, 0, 640, 480);
+    pop();
   }
 
   for (let hand of predictions) {
@@ -112,8 +116,7 @@ function modelLoaded() {
 
 /*TODOs -----------------------------------------------------------
 
-Make the camera and controls mirrored
-Make the camera invisible
+Change size of camera to match size of screen
 Adjust the confidence levels and make the movements more fluid
 Make hand skelleton (avatar)
 
