@@ -16,10 +16,10 @@ function setup() {
   video.hide();
 
   handpose = ml5.handpose(video, modelLoaded);
-
   handpose.on("hand", (results) => {
     predictions = results;
   });
+
   newHand = new Hand();
   for (let i = 0; i < 20; i++){
     for (let j = 0; j < 20; j++) {
@@ -96,3 +96,12 @@ function summonCameraTracking() { //cited from garritt's Handpose example: https
 function modelLoaded() {
   console.log("Model Loaded!");
 }
+
+/*TODOs -----------------------------------------------------------
+
+Make the camera and controls mirrored
+Make the camera invisible
+Adjust the confidence levels and make the movements more fluid
+Make hand skelleton (avatar)
+
+*/
