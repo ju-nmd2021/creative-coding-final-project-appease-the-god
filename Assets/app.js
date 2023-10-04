@@ -1,3 +1,6 @@
+//Global Constants -------------------------------------------------
+const SHOW_CAMERA = true;
+
 //Global Variables -------------------------------------------------
 let mouse;
 let airParticles = [];
@@ -6,6 +9,15 @@ let handpose;
 let predictions = [];
 let newHand;
 
+//cited from the handpose docutmentation at https://learn.ml5js.org/#/reference/handpose
+const options = {
+  flipHorizontal: true, // boolean value for if the video should be flipped, defaults to false
+  maxContinuousChecks: Infinity, // How many frames to go without running the bounding box detector. Defaults to infinity, but try a lower value if the detector is consistently producing bad predictions.
+  detectionConfidence: 0.8, // Threshold for discarding a prediction. Defaults to 0.8.
+  scoreThreshold: 0.75, // A threshold for removing multiple (likely duplicate) detections based on a "non-maximum suppression" algorithm. Defaults to 0.75
+  iouThreshold: 0.3, // A float representing the threshold for deciding whether boxes overlap too much in non-maximum suppression. Must be between [0, 1]. Defaults to 0.3.
+  };
+
 //Setup ------------------------------------------------------------
 function setup() {
   createCanvas(innerWidth, innerHeight);
@@ -13,9 +25,8 @@ function setup() {
 
   video = createCapture(VIDEO);
   video.size(640, 480);
-  video.hide();
 
-  handpose = ml5.handpose(video, modelLoaded);
+  handpose = ml5.handpose(video, options, modelLoaded);
   handpose.on("hand", (results) => {
     predictions = results;
   });
@@ -68,7 +79,9 @@ function draw() {
 
 //Misc Functions ----------------------------------------------------
 function summonCameraTracking() { //cited from garritt's Handpose example: https://codepen.io/pixelkind/pen/BavQawB
-  image(video, 0, 0, 640, 480);
+  if (SHOW_CAMERA){
+    image(video, 0, 0, 640, 480);
+  }
 
   for (let hand of predictions) {
     const x1 = hand.boundingBox.topLeft[0];
