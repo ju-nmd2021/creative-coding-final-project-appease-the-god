@@ -9,6 +9,7 @@ let video;
 let handpose;
 let predictions = [];
 let newHand;
+let hands = []; 
 let poseNet;
 let poses = [];
 
@@ -32,8 +33,8 @@ const options2 = {
   nmsRadius: 20,
   detectionType: 'single',
   inputResolution: 513,
-  multiplier: 0.75,
-  quantBytes: 2,
+  multiplier: 1.00,
+  quantBytes: 4,
 };
 
 //Setup ------------------------------------------------------------
@@ -56,7 +57,8 @@ function setup() {
     poses = results;
   });
 
-  newHand = new Hand();
+  mouseHand = new Hand("mouse");
+  hands.push(mouseHand);
   for (let i = 0; i < PARTICLE_COUNT; i++){
     for (let j = 0; j < PARTICLE_COUNT; j++) {
       let newParticle = new AirParticle(i * 50, j * 50);
@@ -68,11 +70,12 @@ function setup() {
 
 //Classes ----------------------------------------------------------
 class Hand {
-  constructor(){
-    this.position = createVector(mouseX, mouseY);
+  constructor(title){
+    this.position = createVector(100, 100);
+    this.title = title;
   }
-  update(){
-    this.position = createVector(mouseX, mouseY);
+  update(newX, newY){
+    this.position = createVector(newX, newY);
   }
   draw(){
     ellipse(this.position.x, this.position.y, 25);
@@ -92,9 +95,16 @@ class AirParticle {
 function draw() {
   background(100, 100, 100);
   drawTracking();
-  if (newHand) {
-    newHand.update();
-    newHand.draw(); 
+
+  for (let hand of hands) {
+    if (hand.title == "mouse"){
+      hand.update(mouseX, mouseY);
+    } else if (hand.title == "leftWrist") {
+      hand.update(mouseX + 20, mouseY + 20);
+    } else if (hand.title == "rightWrist") {
+      hand.update(mouseX - 20, mouseY + 20);
+    }
+    hand.draw(); 
   }
   for (let particle of airParticles){
     particle.draw();
@@ -133,6 +143,9 @@ function drawTracking() { //cited from garritt's Handpose example: https://codep
     // }
   }
 
+  console.log(poses);
+  // rightWrist and leftWrist are names of different points that we can use
+
   for (let pose of poses) {
     const keypoints = pose.pose.keypoints;
     for (let keypoint of keypoints) {
@@ -157,12 +170,16 @@ function drawTracking() { //cited from garritt's Handpose example: https://codep
 }
 
 function modelLoaded() {
+  leftHand = new Hand("leftWrist");
+  rightHand = new Hand("rightWrist");
+  hands.push(leftHand, rightHand);
   console.log("Model Loaded!");
 }
 
 /*TODOs -----------------------------------------------------------
 
-Change size of camera to match size of screen
+Change size of camera to match size of screen 
+  - might be done with .imageScaleFactor
 Adjust the confidence levels and make the movements more fluid
 Make hand skelleton (avatar)
 
