@@ -1,5 +1,24 @@
 #p5container {
-    grid-row: 1 / 4;
-    grid-column: 1 / 2;
-    background-color: white;
-  }
+
+  position: relative;
+  margin: 0;
+  display: block;
+}
+
+html {
+  color: rgb(58, 52, 45);
+}
+
+footer {
+  font-family: Arial, Helvetica, sans-serif;
+  position: absolute;
+  bottom: 0;
+  padding: 5vh;
+  background-color: rgb(235, 231, 209);
+  width: 100%;
+  text-align: center;
+}
+
+footer h1 {
+  font-size: 3em;
+}
