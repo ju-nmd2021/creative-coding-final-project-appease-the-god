@@ -87,15 +87,6 @@ class Hand {
   }
 }
 
-class AirParticle {
-  constructor(x, y){
-    this.position = createVector(x, y);
-  }
-  draw(){
-    ellipse(this.position.x, this.position.y, 5);
-  }
-}
-
 //Draw Function ----------------------------------------------------
 function draw() {
   background(100, 100, 100);
@@ -126,64 +117,9 @@ function draw() {
       hand.draw(); 
     }
   }
-
-  for (let particle of airParticles){
-    particle.draw();
-  }
 }
 
 //Misc Functions ----------------------------------------------------
-function drawTracking() { //cited from garritt's Handpose example: https://codepen.io/pixelkind/pen/BavQawB
-
-  for (let hand of predictions) {
-    // const x1 = hand.boundingBox.topLeft[0];
-    // const y1 = hand.boundingBox.topLeft[1];
-    // const x2 = hand.boundingBox.bottomRight[0];
-    // const y2 = hand.boundingBox.bottomRight[1];
-    // push();
-    // noFill();
-    // stroke(0, 255, 0);
-    // rectMode(CORNERS);
-    // rect(x1, y1, x2, y2);
-    // pop();
-
-    // const landmarks = hand.landmarks;
-    // for (let landmark of landmarks) {
-    //   push();
-    //   noStroke();
-    //   fill(0, 255, 0);
-    //   ellipse(landmark[0], landmark[1], 10);
-    //   pop();
-    // }
-  }
-  // rightWrist and leftWrist are names of different points that we can use
-
-  for (let pose of poses) {
-    const keypoints = pose.pose.keypoints;
-    for (let keypoint of keypoints) {
-      if (keypoint.score > 0.4) {
-        push();
-        fill(0, 255, 0);
-        noStroke();
-        ellipse(keypoint.position.x, keypoint.position.y, 20);
-        pop();
-      }
-    }
-
-    const skeleton = pose.skeleton;
-    for (let part of skeleton) {
-      push();
-      stroke(0, 255, 0);
-      line(
-        part[0].position.x,
-        part[0].position.y,
-        part[1].position.x,
-        part[1].position.y
-      );
-      pop();
-    }
-  }
-}
 
 function modelLoaded() {
   leftHand = new Hand("leftWrist", 50);
