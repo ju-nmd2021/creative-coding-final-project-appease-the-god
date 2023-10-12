@@ -26,7 +26,7 @@ const options2 = {
   architecture: 'MobileNetV1',
   imageScaleFactor: 0.3,
   outputStride: 16,
-  flipHorizontal: false,
+  flipHorizontal: true,
   minConfidence: 0.5,
   maxPoseDetections: 5,
   scoreThreshold: 0.5,
@@ -40,6 +40,7 @@ const options2 = {
 //Setup ------------------------------------------------------------
 function setup() {
   createCanvas(innerWidth, innerHeight);
+  colorMode(HSB, 255);
   background(34, 39, 46);
 
   video = createCapture(VIDEO);
@@ -57,7 +58,7 @@ function setup() {
     poses = results;
   });
 
-  mouseHand = new Hand("mouse");
+  mouseHand = new Hand("mouse", 250);
   hands.push(mouseHand);
   for (let i = 0; i < PARTICLE_COUNT; i++){
     for (let j = 0; j < PARTICLE_COUNT; j++) {
@@ -70,15 +71,19 @@ function setup() {
 
 //Classes ----------------------------------------------------------
 class Hand {
-  constructor(title){
+  constructor(title, hue){
     this.position = createVector(100, 100);
     this.title = title;
+    this.hue = hue;
   }
   update(newX, newY){
     this.position = createVector(newX, newY);
   }
   draw(){
+    push()
+    fill(this.hue, 255, 255);
     ellipse(this.position.x, this.position.y, 25);
+    pop()
   }
 }
 
@@ -96,16 +101,18 @@ function draw() {
   background(100, 100, 100);
   drawTracking();
 
-  for (let hand of hands) {
-    if (hand.title == "mouse"){
-      hand.update(mouseX, mouseY);
-    } else if (hand.title == "leftWrist") {
-      hand.update(mouseX + 20, mouseY + 20);
-    } else if (hand.title == "rightWrist") {
-      hand.update(mouseX - 20, mouseY + 20);
+  if (poses[0]){
+    for (let hand of hands) {
+      switch(hand.title){
+        case "mouse": hand.update(mouseX, mouseY); break;
+        case "leftWrist": hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); break;
+        case "rightWrist": hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); break;
+        default: break;
+      }
+      hand.draw(); 
     }
-    hand.draw(); 
   }
+
   for (let particle of airParticles){
     particle.draw();
   }
@@ -115,8 +122,8 @@ function draw() {
 function drawTracking() { //cited from garritt's Handpose example: https://codepen.io/pixelkind/pen/BavQawB
   if (SHOW_CAMERA){
     push();
-    // translate(640, 0);
-    // scale(-1,1);
+    translate(640, 0);
+    scale(-1,1);
     image(video, 0, 0, 640, 480);
     pop();
   }
@@ -142,22 +149,23 @@ function drawTracking() { //cited from garritt's Handpose example: https://codep
     //   pop();
     // }
   }
-
-  console.log(poses);
   // rightWrist and leftWrist are names of different points that we can use
 
   for (let pose of poses) {
     const keypoints = pose.pose.keypoints;
     for (let keypoint of keypoints) {
       if (keypoint.score > 0.4) {
+        push();
         fill(0, 255, 0);
         noStroke();
         ellipse(keypoint.position.x, keypoint.position.y, 20);
+        pop();
       }
     }
 
     const skeleton = pose.skeleton;
     for (let part of skeleton) {
+      push();
       stroke(0, 255, 0);
       line(
         part[0].position.x,
@@ -165,13 +173,14 @@ function drawTracking() { //cited from garritt's Handpose example: https://codep
         part[1].position.x,
         part[1].position.y
       );
+      pop();
     }
   }
 }
 
 function modelLoaded() {
-  leftHand = new Hand("leftWrist");
-  rightHand = new Hand("rightWrist");
+  leftHand = new Hand("leftWrist", 50);
+  rightHand = new Hand("rightWrist", 150);
   hands.push(leftHand, rightHand);
   console.log("Model Loaded!");
 }
