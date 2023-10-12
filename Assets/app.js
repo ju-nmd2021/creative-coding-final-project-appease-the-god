@@ -99,14 +99,28 @@ class AirParticle {
 //Draw Function ----------------------------------------------------
 function draw() {
   background(100, 100, 100);
-  drawTracking();
+  if (SHOW_CAMERA){
+    push();
+    translate(640, 0);
+    scale(-1,1);
+    image(video, 0, 0, 640, 480);
+    pop();
+  }
+
+  // drawTracking();
 
   if (poses[0]){
     for (let hand of hands) {
       switch(hand.title){
         case "mouse": hand.update(mouseX, mouseY); break;
-        case "leftWrist": hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); break;
-        case "rightWrist": hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); break;
+        case "leftWrist": 
+        if (poses[0].pose.leftWrist.confidence > 0.6){
+          hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); break;
+        }
+        case "rightWrist": 
+        if (poses[0].pose.leftWrist.confidence > 0.6) {
+          hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); break;
+        }
         default: break;
       }
       hand.draw(); 
@@ -120,13 +134,6 @@ function draw() {
 
 //Misc Functions ----------------------------------------------------
 function drawTracking() { //cited from garritt's Handpose example: https://codepen.io/pixelkind/pen/BavQawB
-  if (SHOW_CAMERA){
-    push();
-    translate(640, 0);
-    scale(-1,1);
-    image(video, 0, 0, 640, 480);
-    pop();
-  }
 
   for (let hand of predictions) {
     // const x1 = hand.boundingBox.topLeft[0];
