@@ -52,7 +52,9 @@ class Fluid {
         
         for(let i = 0; i < this.w; ++i){
             for(let j = 0; j < this.h; ++j){
-                this.velocity[i][j] = createVector(xs[i][j], ys[i][j]);
+                // this.velocity[i][j] = createVector(xs[i][j], ys[i][j]);
+                this.velocity[i][j].x = xs[i][j];
+                this.velocity[i][j].y = ys[i][j];
             }
         }
         
@@ -70,7 +72,9 @@ class Fluid {
         
         for(let i = 0; i < this.w; ++i){
             for(let j = 0; j < this.h; ++j){
-                this.velocity[i][j] = createVector(xs[i][j], ys[i][j]);
+                // this.velocity[i][j] = createVector(xs[i][j], ys[i][j]);
+                this.velocity[i][j].x = xs[i][j];
+                this.velocity[i][j].y = ys[i][j];
             }
         }
         
@@ -104,18 +108,31 @@ class Fluid {
     }
     
     advect(grid, dt) {
+        let f = createVector(0, 0);
+        let fj = createVector(0, 0);
+        let fi = createVector(0, 0);
         for(let i = 0; i < this.w; ++i){
             for(let j = 0; j < this.h; ++j){
             let v = this.velocity[i][j].copy();
             let x = i * this.size;// + this.size/2;
             let y = j * this.size;// + this.size/2;
-            let f = createVector(x, y);
+            // let f = createVector(x, y);
+            f.x = x;
+            f.y = y;
             v.mult(dt);
             f.sub(v);
             f.mult(1 / this.size);
-            f = createVector(wrap(f.x, this.w), wrap(f.y, this.h));
-            let fi = createVector(floor(f.x), floor(f.y));
-            let fj = createVector(fract(f.x), fract(f.y));
+            f.x = wrap(f.x, this.w);
+            f.y = wrap(f.y, this.h);
+            // f = createVector(wrap(f.x, this.w), wrap(f.y, this.h));
+            // let fi = createVector(floor(f.x), floor(f.y));
+            // let fj = createVector(fract(f.x), fract(f.y));
+            // fi.x = floor(f.x);
+            // fi.y = floor(f.y);
+            fi.x = ~~f.x;
+            fi.y = ~~f.y;
+            fj.x = f.x - fi.x;// fract(f.x);
+            fj.y = f.y - fi.y; // fract(f.y);
             
             let z1 = lerp(grid[fi.x][fi.y],
                             grid[wrap(fi.x + 1, this.w)][fi.y],
@@ -172,14 +189,16 @@ class Fluid {
     }
     
     show(showVel){
-        noStroke();
-        noFill();
+        // noStroke();
+        // noFill();
         for(let i = 0; i < this.w; ++i){
             for(let j = 0; j < this.h; ++j){
                 let x = i * this.size;
                 let y = j * this.size;
-                fill(255 * this.density[i][j]);
-                rect(x, y, x + this.size, y + this.size);
+                if (this.density[i][j] > 0.1) {
+                    fill(255 * this.density[i][j]);
+                    rect(x, y, SCALE, SCALE, SCALE);
+                }
             }
         }
         
@@ -199,15 +218,17 @@ class Fluid {
     }
 }
 
-const N = 40;
+const N = 50;
 const SCALE = 10;
-const DENS_DECAY = 0.05;
-const VESCOCITY = 0.985;
+const DENS_DECAY = 0.08;
+const VISCOSITY = 0.985;
 let fluid;
 let t;
 
 function setup() {
     createCanvas(N * SCALE, N * SCALE, WEBGL);
+    frameRate(60);
+    noStroke();
     
     fluid = new Fluid(N, N, ceil(width / N), 0.05, 0.8);
     
@@ -219,7 +240,7 @@ function draw() {
     translate(-N * SCALE/2, -N * SCALE/2)
     
     let dt = frameRate() > 0 ? 1 / frameRate() : 0;
-    
+    // let dt = 1 / 30;
     fluid.simulate(dt);
 
     // let x = floor(fluid.w / 2);
@@ -234,13 +255,13 @@ function draw() {
     for(let i = 0; i < fluid.w; i++) {
         for(let j = 0; j < fluid.h; j++){
             fluid.density[i][j] -= DENS_DECAY * dt;
-            fluid.velocity[i][j].mult(VESCOCITY);
+            fluid.velocity[i][j].mult(VISCOSITY);
         }
     }
 
     // console.log(frameRate())
     
-    t += dt;
+    // t += dt;
 }
 
 function mouseDragged() { 
