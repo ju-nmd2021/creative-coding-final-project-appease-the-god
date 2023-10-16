@@ -1,10 +1,8 @@
 //Global Constants -------------------------------------------------
 const SHOW_CAMERA = true;
 const PARTICLE_COUNT = 0;
-const N = 20;
+const N = 30;
 const SCALE = 20;
-const DENS_DECAY = 0.5;
-const VISCOSITY = 0.985;
 
 //Global Variables -------------------------------------------------
 let mouse;
@@ -22,6 +20,14 @@ let leftHand;
 let rightHand;
 let prevLX, prevLY;
 let prevRX, prevRY;
+let sadness = 0;
+let fury = 0;
+let boredom = 0;
+let excitement = 0;
+
+let force = fury > 0.5 ? 200 + (300 * fury): 200;
+const DENS_DECAY = boredom > 0.5 ? 0.5 + (0.2 * (1 - boredom)) : 0.5;
+const VISCOSITY = sadness > 0.5 ? 0.5 - (0.2 * (1 - sadness)) : 0.5;
 
 //cited from the handpose docutmentation at https://learn.ml5js.org/#/reference/handpose
 const options = {
@@ -53,9 +59,9 @@ function setup() {
   colorMode(HSB, 255);
   // background(34, 39, 46);
 
-  video = createCapture(VIDEO);
-  video.size(640, 480);
-  video.hide();
+  // video = createCapture(VIDEO);
+  // video.size(640, 480);
+  // video.hide();
 
   frameRate(60);
   noStroke();
@@ -68,28 +74,107 @@ function setup() {
   //   predictions = results;
   // });
 
-  poseNet = ml5.poseNet(video, options2, modelLoaded); // single can be changed to multiple
-  poseNet.on("pose", (results) => {
-    poses = results;
+  // poseNet = ml5.poseNet(video, options2, modelLoaded); // single can be changed to multiple
+  // poseNet.on("pose", (results) => {
+  //   poses = results;
     
-    let left = poses[0].pose.leftWrist;
-    let right = poses[0].pose.rightWrist;
-    let lx, ly;
-    let rx, ry;
-    lx = map(left.x, 0, 640, 0, N * SCALE);
-    ly = map(left.y, 0, 640, 0, N * SCALE);
-    rx = map(right.x, 0, 480, 0, N * SCALE);
-    ry = map(right.y, 0, 480, 0, N * SCALE);
-    leftHand = new Hand("leftWrist", 50, lx, ly);
-    rightHand = new Hand("rightWrist", 150, rx, ry);
-    hands.push(leftHand);
-    hands.push(rightHand);
-  });
+  //   let left = poses[0].pose.leftWrist;
+  //   let right = poses[0].pose.rightWrist;
+  //   let lx, ly;
+  //   let rx, ry;
+  //   lx = map(left.x, 0, 640, 0, N * SCALE);
+  //   ly = map(left.y, 0, 640, 0, N * SCALE);
+  //   rx = map(right.x, 0, 480, 0, N * SCALE);
+  //   ry = map(right.y, 0, 480, 0, N * SCALE);
+  //   leftHand = new Hand("leftWrist", 50, lx, ly);
+  //   rightHand = new Hand("rightWrist", 150, rx, ry);
+  //   hands.push(leftHand);
+  //   hands.push(rightHand);
+  // });
 
   // mouseHand = new Hand("mouse", 250);
   // hands.push(mouseHand);
   
   // mouse = createVector(mouseX, mouseY);
+}
+
+//Draw Function ----------------------------------------------------
+
+function draw() {
+  background(0);
+  // if (SHOW_CAMERA){
+  //   push();
+  //   translate(640, 0);
+  //   scale(-1,1);
+  //   image(video, 0, 0, 640, 480);
+  //   pop();
+  // }
+
+  // drawTracking();
+
+  // if (poses[0]){
+  //   for (let hand of hands) {
+  //     switch(hand.title){
+  //       case "mouse": 
+  //         hand.update(mouseX, mouseY); 
+  //         break;
+  //       case "leftWrist": 
+  //         if (poses[0].pose.leftWrist.confidence > 0.6){
+  //           hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); 
+  //           break;
+  //         }
+  //       case "rightWrist": 
+  //         if (poses[0].pose.rightWrist.confidence > 0.6) {
+  //           hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); 
+  //           break;
+  //         }
+  //       default: break;
+  //     }
+  //     hand.draw(); 
+  //   }
+  // }
+
+  let xoff = 0.0;
+
+  xoff += 0.0001;
+
+  sadness =    noiseFromSeed(random() * 1000, xoff);
+  fury =       noiseFromSeed(random() * 1000, xoff);
+  excitement = noiseFromSeed(random() * 1000, xoff);
+  boredom =    noiseFromSeed(random() * 1000, xoff);
+
+  // console.log(`sadness: ${sadness}, fury: ${fury}, excitement: ${excitement}, boredom: ${boredom}, `)
+  
+  let dt = frameRate() > 0 ? 1 / frameRate() : 0;
+
+  // handControl();
+
+  fluid.simulate(dt);
+  fluid.show(false);
+  
+  for(let i = 0; i < fluid.w; i++) {
+    for(let j = 0; j < fluid.h; j++){
+        fluid.density[i][j] -= DENS_DECAY * dt;
+        fluid.velocity[i][j].mult(0.99);
+    }
+  }
+
+  let x = constrain(floor(mouseX/SCALE), 0, N-1);
+  let y = constrain(floor(mouseY/SCALE), 0, N-1);
+
+  if (fury > 0.55) {
+    if (random() < fury) {
+      let randx = floor(random() * N);
+      let randy = floor(random() * N);
+
+      fluid.density[randx][randy] = 40;
+      fluid.velocity[randx][randy].add(random() * force * 200, random() * force * 200);
+    } 
+  }
+ 
+  // fluid.velocity[x][y].setHeading(random() * TWO_PI);
+  // goCrazy();
+  // console.log(dt);
 }
 
 //Classes ----------------------------------------------------------
@@ -132,15 +217,15 @@ class Fluid {
   }
   
   simulate(dt){
-          let xs = [];
-          let ys = [];
-          for(let i = 0; i < this.w; ++i){
-              xs.push([]);
-              ys.push([]);
-              for(let j = 0; j < this.h; ++j){
-              xs[i].push(this.velocity[i][j].x);
-              ys[i].push(this.velocity[i][j].y);
-              }
+      let xs = [];
+      let ys = [];
+      for(let i = 0; i < this.w; ++i){
+          xs.push([]);
+          ys.push([]);
+          for(let j = 0; j < this.h; ++j){
+            xs[i].push(this.velocity[i][j].x);
+            ys[i].push(this.velocity[i][j].y);
+          }
       }
       
       this.diffuse(xs, this.nu, dt);
@@ -227,7 +312,7 @@ class Fluid {
           // fi.y = floor(f.y);
           fi.x = ~~f.x;
           fi.y = ~~f.y;
-          fj.x = f.x - fi.x;// fract(f.x);
+          fj.x = f.x - fi.x; // fract(f.x);
           fj.y = f.y - fi.y; // fract(f.y);
           
           let z1 = lerp(grid[fi.x][fi.y],
@@ -276,10 +361,10 @@ class Fluid {
       
       for(let i = 0; i < this.w; ++i){
           for(let j = 0; j < this.h; ++j){
-              this.velocity[i][j].x -= 0.5 * (p[wrap(i + 1, this.w)][j] -
-                                              p[wrap(i - 1, this.w)][j]);
-              this.velocity[i][j].y -= 0.5 * (p[i][wrap(j + 1, this.h)] -
-                                              p[i][wrap(j - 1, this.h)]);
+              this.velocity[i][j].x -= VISCOSITY * (p[wrap(i + 1, this.w)][j] -
+                                                    p[wrap(i - 1, this.w)][j]);
+              this.velocity[i][j].y -= VISCOSITY * (p[i][wrap(j + 1, this.h)] -
+                                                    p[i][wrap(j - 1, this.h)]);
           }
       }
   }
@@ -291,7 +376,7 @@ class Fluid {
           for(let j = 0; j < this.h; ++j){
               let x = i * this.size;
               let y = j * this.size;
-              if (this.density[i][j] > 0.05) {
+              if (this.density[i][j] > 0.0) {
                   fill(255 * this.density[i][j]);
                   rect(x, y, SCALE, SCALE, SCALE);
               }
@@ -314,80 +399,15 @@ class Fluid {
   }
 }
 
-//Draw Function ----------------------------------------------------
-function draw() {
-  background(0);
-  // if (SHOW_CAMERA){
-  //   push();
-  //   translate(640, 0);
-  //   scale(-1,1);
-  //   image(video, 0, 0, 640, 480);
-  //   pop();
-  // }
-
-  // drawTracking();
-
-  // if (poses[0]){
-  //   for (let hand of hands) {
-  //     switch(hand.title){
-  //       case "mouse": 
-  //         hand.update(mouseX, mouseY); 
-  //         break;
-  //       case "leftWrist": 
-  //         if (poses[0].pose.leftWrist.confidence > 0.6){
-  //           hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); 
-  //           break;
-  //         }
-  //       case "rightWrist": 
-  //         if (poses[0].pose.rightWrist.confidence > 0.6) {
-  //           hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); 
-  //           break;
-  //         }
-  //       default: break;
-  //     }
-  //     hand.draw(); 
-  //   }
-  // }
-  
-  let dt = frameRate() > 0 ? 1 / frameRate() : 0;
-  
-  if (hands.length > 0) {
-    let lx = constrain(floor(leftHand.position.x/SCALE), 0, N-1);
-    let ly = constrain(floor(leftHand.position.y/SCALE), 0, N-1);
-    let rx = constrain(floor(rightHand.position.x/SCALE), 0, N-1);
-    let ry = constrain(floor(rightHand.position.y/SCALE), 0, N-1);
-  
-    // console.log(leftHand.position);
-  
-    let amtLX = leftHand.position.x - prevLX;
-    let amtLY = leftHand.position.y - prevLY;
-    let amtRX = rightHand.position.x - prevRX;
-    let amtRY = rightHand.position.y - prevRY;
-    fluid.density[lx][ly] = 7;
-    fluid.velocity[lx][ly].add(createVector(70 * amtLX, 70 * amtLY));
-    fluid.density[rx][ry] = 7;
-    fluid.velocity[rx][ry].add(createVector(70 * amtRX, 70 * amtRY));
-    
-    prevLX = leftHand.position.x;
-    prevLY = leftHand.position.y;
-    prevRX = rightHand.position.x;
-    prevRY = rightHand.position.y;
-  }
-
-  fluid.simulate(dt);
-  fluid.show(false);
-  for(let i = 0; i < fluid.w; i++) {
-    for(let j = 0; j < fluid.h; j++){
-        fluid.density[i][j] -= DENS_DECAY * dt;
-        fluid.velocity[i][j].mult(VISCOSITY);
-    }
-  }
-}
-
 //Misc Functions ----------------------------------------------------
 
 function modelLoaded() {
   console.log("Model Loaded!");
+}
+
+function noiseFromSeed(seed, xoff) {
+  noiseSeed(seed);
+  return noise(xoff);
 }
 
 function wrap(x, m){
@@ -403,15 +423,59 @@ function arrow(pos, dir){
   pop();
 }
 
+function handControl() { 
+  if (hands.length > 0) {
+    let lx = constrain(floor(leftHand.position.x/SCALE), 0, N-1);
+    let ly = constrain(floor(leftHand.position.y/SCALE), 0, N-1);
+    let rx = constrain(floor(rightHand.position.x/SCALE), 0, N-1);
+    let ry = constrain(floor(rightHand.position.y/SCALE), 0, N-1);
+  
+    // console.log(leftHand.position);
+  
+    let amtLX = leftHand.position.x - prevLX;
+    let amtLY = leftHand.position.y - prevLY;
+    let amtRX = rightHand.position.x - prevRX;
+    let amtRY = rightHand.position.y - prevRY;
+
+    fluid.density[lx][ly] = 7;
+    fluid.velocity[lx][ly].add(createVector(70 * amtLX, 70 * amtLY));
+    fluid.density[rx][ry] = 7;
+    fluid.velocity[rx][ry].add(createVector(70 * amtRX, 70 * amtRY));
+    
+    prevLX = leftHand.position.x;
+    prevLY = leftHand.position.y;
+    prevRX = rightHand.position.x;
+    prevRY = rightHand.position.y;
+  }
+}
+
 function mouseDragged() { 
-  let x = constrain(floor(mouseX/SCALE), 0, N-1);
-  let y = constrain(floor(mouseY/SCALE), 0, N-1);
+  // if (!mouseIsPressed) return;
+
+  let x = constrain(~~(mouseX/SCALE), 0, N-1);
+  let y = constrain(~~(mouseY/SCALE), 0, N-1);
   
   let amtX = mouseX - pmouseX;
   let amtY = mouseY - pmouseY;
   fluid.density[x][y] = 15;
-  fluid.velocity[x][y].add(createVector(100 * amtX, 100 * amtY));
+  fluid.velocity[x][y].add(force * amtX, force * amtY);
+  
+  if (boredom > 0.5) {
+    fluid.velocity[x][y].setHeading(fluid.velocity[x][y].heading() + PI);
+  }
+
+  // if (excitement > 0.5) {
+    
+  // }
+
+  force = 500;  
 }
+
+// function excitementTrigger() {
+//   if () {
+
+//   }
+// }
 
 /*TODOs -----------------------------------------------------------
 
