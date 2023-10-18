@@ -1,8 +1,12 @@
 //Global Constants -------------------------------------------------
 const SHOW_CAMERA = true;
 const PARTICLE_COUNT = 0;
-const N = 30;
-const SCALE = 20;
+const N = 20;
+const SCALE = 40;
+const HUE = {         sadness: 240, fury: 6,    boredom: 140,   excitement: 40 }; // out of 360
+const SATURATION = {  sadness: 40,  fury: 100,  boredom: 50,    excitement: 90 }; // out of 100
+const LIGHTNESS = {   sadness: 40,  fury: 30,   boredom: 50,    excitement: 50 }; // out of 100
+const RANGE = 20;
 
 //Global Variables -------------------------------------------------
 let mouse;
@@ -24,10 +28,13 @@ let sadness = 0;
 let fury = 0;
 let boredom = 0;
 let excitement = 0;
+let seed1, seed2, seed3, seed4;
+let xoff = 0.0;
+let emotions;
 
-let force = fury > 0.5 ? 200 + (300 * fury): 200;
-const DENS_DECAY = boredom > 0.5 ? 0.5 + (0.2 * (1 - boredom)) : 0.5;
-const VISCOSITY = sadness > 0.5 ? 0.5 - (0.2 * (1 - sadness)) : 0.5;
+const force = fury > 0.7 ? 200 + (300 * fury): 200;
+const DENS_DECAY = boredom > 0.7 ? 0.5 + (0.2 * (1 - boredom)) : 0.5;
+const VISCOSITY = sadness > 0.7 ? 0.5 - (0.2 * (1 - sadness)) : 0.5;
 
 //cited from the handpose docutmentation at https://learn.ml5js.org/#/reference/handpose
 const options = {
@@ -96,12 +103,17 @@ function setup() {
   // hands.push(mouseHand);
   
   // mouse = createVector(mouseX, mouseY);
+
+  seed1 = random() * 1000; 
+  seed2 = random() * 1000; 
+  seed3 = random() * 1000; 
+  seed4 = random() * 1000; 
 }
 
 //Draw Function ----------------------------------------------------
 
 function draw() {
-  background(0);
+  background(350);
   // if (SHOW_CAMERA){
   //   push();
   //   translate(640, 0);
@@ -134,16 +146,16 @@ function draw() {
   //   }
   // }
 
-  let xoff = 0.0;
+  xoff = xoff + 0.01;
 
-  xoff += 0.0001;
+  sadness =    noiseFromSeed(seed1, xoff);
+  fury =       noiseFromSeed(seed2, xoff);
+  excitement = noiseFromSeed(seed3, xoff);
+  boredom =    noiseFromSeed(seed4, xoff);
 
-  sadness =    noiseFromSeed(random() * 1000, xoff);
-  fury =       noiseFromSeed(random() * 1000, xoff);
-  excitement = noiseFromSeed(random() * 1000, xoff);
-  boredom =    noiseFromSeed(random() * 1000, xoff);
+  emotions = { sadness, fury, boredom, excitement };
 
-  // console.log(`sadness: ${sadness}, fury: ${fury}, excitement: ${excitement}, boredom: ${boredom}, `)
+  console.log(emotions)
   
   let dt = frameRate() > 0 ? 1 / frameRate() : 0;
 
@@ -159,16 +171,17 @@ function draw() {
     }
   }
 
-  let x = constrain(floor(mouseX/SCALE), 0, N-1);
-  let y = constrain(floor(mouseY/SCALE), 0, N-1);
+  let x = constrain(~~(mouseX/SCALE), 0, N-1);
+  let y = constrain(~~(mouseY/SCALE), 0, N-1);
 
-  if (fury > 0.55) {
-    if (random() < fury) {
-      let randx = floor(random() * N);
-      let randy = floor(random() * N);
+  if (fury > 0.7) {
+    if (random() > 0.5) {
+      let randx = ~~(random() * N);
+      let randy = ~~(random() * N);
 
-      fluid.density[randx][randy] = 40;
-      fluid.velocity[randx][randy].add(random() * force * 200, random() * force * 200);
+      fluid.density[randx][randy] = 45;
+      fluid.velocity[randx][randy].add(random() * force * 20, random() * force * 20);
+      fluid.velocity[randx][randy].setHeading(random() * TWO_PI);
     } 
   }
  
@@ -192,6 +205,8 @@ class Hand {
   }
 }
 
+// much of this object and other things related to fluid simulation in this program is derived from krafpy's implementation
+// of Jos Stam's Real-Time Fluid Dynamics for Games: https://editor.p5js.org/krafpy/sketches/Xv1uO8IEf
 class Fluid {
   constructor(w, h, size, k, nu){
       this.w = w;
@@ -200,8 +215,8 @@ class Fluid {
       this.k = k;
       this.nu = nu;
       
-      this.density = new Array(this.w * []);
-      this.velocity = new Array(this.w * []);
+      this.density = [];
+      this.velocity = [];
       for(let i = 0; i < this.w; ++i){
           this.density.push([]);
           this.velocity.push([]);
@@ -233,7 +248,6 @@ class Fluid {
       
       for(let i = 0; i < this.w; ++i){
           for(let j = 0; j < this.h; ++j){
-              // this.velocity[i][j] = createVector(xs[i][j], ys[i][j]);
               this.velocity[i][j].x = xs[i][j];
               this.velocity[i][j].y = ys[i][j];
           }
@@ -253,7 +267,6 @@ class Fluid {
       
       for(let i = 0; i < this.w; ++i){
           for(let j = 0; j < this.h; ++j){
-              // this.velocity[i][j] = createVector(xs[i][j], ys[i][j]);
               this.velocity[i][j].x = xs[i][j];
               this.velocity[i][j].y = ys[i][j];
           }
@@ -295,9 +308,8 @@ class Fluid {
       for(let i = 0; i < this.w; ++i){
           for(let j = 0; j < this.h; ++j){
           let v = this.velocity[i][j].copy();
-          let x = i * this.size;// + this.size/2;
-          let y = j * this.size;// + this.size/2;
-          // let f = createVector(x, y);
+          let x = i * this.size;
+          let y = j * this.size;
           f.x = x;
           f.y = y;
           v.mult(dt);
@@ -305,16 +317,13 @@ class Fluid {
           f.mult(1 / this.size);
           f.x = wrap(f.x, this.w);
           f.y = wrap(f.y, this.h);
-          // f = createVector(wrap(f.x, this.w), wrap(f.y, this.h));
-          // let fi = createVector(floor(f.x), floor(f.y));
-          // let fj = createVector(fract(f.x), fract(f.y));
-          // fi.x = floor(f.x);
-          // fi.y = floor(f.y);
           fi.x = ~~f.x;
           fi.y = ~~f.y;
-          fj.x = f.x - fi.x; // fract(f.x);
-          fj.y = f.y - fi.y; // fract(f.y);
-          
+          fj.x = f.x - fi.x;
+          fj.y = f.y - fi.y;
+
+          // console.log(f.x);
+
           let z1 = lerp(grid[fi.x][fi.y],
                           grid[wrap(fi.x + 1, this.w)][fi.y],
                           fj.x);
@@ -332,7 +341,6 @@ class Fluid {
   clearDivergence(){
       let div = [];
       let p = [];
-      //let h = 1/this.w;
       
       for(let i = 0; i < this.w; ++i){
           div.push([]);
@@ -370,15 +378,20 @@ class Fluid {
   }
   
   show(showVel){
-      // noStroke();
-      // noFill();
+      const strongestEmotion = Object.entries(emotions).reduce(
+          (prev, curr) => prev[1] > curr[1] ? prev : curr)[0];
+      const mainPalette = HUE[strongestEmotion];
+
       for(let i = 0; i < this.w; ++i){
           for(let j = 0; j < this.h; ++j){
               let x = i * this.size;
               let y = j * this.size;
               if (this.density[i][j] > 0.0) {
-                  fill(255 * this.density[i][j]);
-                  rect(x, y, SCALE, SCALE, SCALE);
+                  colorMode(HSL, 360, 100, 100 , 100);
+                  let medianColor = constrain(mainPalette + this.density[i][j] * 20, mainPalette - RANGE, mainPalette + RANGE);
+                  let hue = map(medianColor, mainPalette + this.density[i][j] * 20, mainPalette - RANGE, mainPalette + RANGE, mainPalette - RANGE, mainPalette + RANGE);
+                  fill(hue, SATURATION[strongestEmotion], LIGHTNESS[strongestEmotion], this.density[i][j] * 100);
+                  rect(x, y, SCALE, SCALE);
               }
           }
       }
@@ -411,7 +424,7 @@ function noiseFromSeed(seed, xoff) {
 }
 
 function wrap(x, m){
-  return (x + m) % m;
+  return abs(x + m) % m;
 }
 
 function arrow(pos, dir){
@@ -467,8 +480,6 @@ function mouseDragged() {
   // if (excitement > 0.5) {
     
   // }
-
-  force = 500;  
 }
 
 // function excitementTrigger() {
