@@ -2,14 +2,14 @@
 const SHOW_CAMERA = true;
 const PARTICLE_COUNT = 0;
 const N = 20;
-const SCALE = 40;
-const HUE = {         sadness: 240, fury: 6,    boredom: 140,   excitement: 40 }; // out of 360
-const SATURATION = {  sadness: 40,  fury: 100,  boredom: 50,    excitement: 90 }; // out of 100
-const LIGHTNESS = {   sadness: 40,  fury: 30,   boredom: 50,    excitement: 50 }; // out of 100
-const RANGE = 20;
+const SCALE = 20;
+const HUE = {         sadness: 225, fury: 1,    boredom: 40,   excitement: 25 }; // out of 360
+const SATURATION = {  sadness: 12,  fury: 100,  boredom: 26,    excitement: 95 }; // out of 100
+const LIGHTNESS = {   sadness: 35,  fury: 45,   boredom: 70,    excitement: 50 }; // out of 100
+const RANGE = 40;
 
 //Global Variables -------------------------------------------------
-let mouse;
+let mouse;  
 let airParticles = [];
 let video;
 let handpose;
@@ -31,9 +31,10 @@ let excitement = 0;
 let seed1, seed2, seed3, seed4;
 let xoff = 0.0;
 let emotions;
+let strongestEmotion;
+let force = 200;
 
-const force = fury > 0.7 ? 200 + (300 * fury): 200;
-const DENS_DECAY = boredom > 0.7 ? 0.5 + (0.2 * (1 - boredom)) : 0.5;
+const DENS_DECAY = 0.7;
 const VISCOSITY = sadness > 0.7 ? 0.5 - (0.2 * (1 - sadness)) : 0.5;
 
 //cited from the handpose docutmentation at https://learn.ml5js.org/#/reference/handpose
@@ -66,9 +67,9 @@ function setup() {
   colorMode(HSB, 255);
   // background(34, 39, 46);
 
-  // video = createCapture(VIDEO);
-  // video.size(640, 480);
-  // video.hide();
+  video = createCapture(VIDEO);
+  video.size(640, 480);
+  video.hide();
 
   frameRate(60);
   noStroke();
@@ -76,28 +77,28 @@ function setup() {
     
   t = 0;
 
-  handpose = ml5.handpose(video, options, modelLoaded);
-  handpose.on("hand", (results) => {
-    predictions = results;
-  });
+  // handpose = ml5.handpose(video, options, modelLoaded);
+  // handpose.on("hand", (results) => {
+  //   predictions = results;
+  // });
 
-  poseNet = ml5.poseNet(video, options2, modelLoaded); // single can be changed to multiple
-  poseNet.on("pose", (results) => {
-    poses = results;
-    
-    let left = poses[0].pose.leftWrist;
-    let right = poses[0].pose.rightWrist;
-    let lx, ly;
-    let rx, ry;
-    lx = map(left.x, 0, 640, 0, N * SCALE);
-    ly = map(left.y, 0, 640, 0, N * SCALE);
-    rx = map(right.x, 0, 480, 0, N * SCALE);
-    ry = map(right.y, 0, 480, 0, N * SCALE);
-    leftHand = new Hand("leftWrist", 50, lx, ly);
-    rightHand = new Hand("rightWrist", 150, rx, ry);
-    hands.push(leftHand);
-    hands.push(rightHand);
-  });
+  // poseNet = ml5.poseNet(video, options2, modelLoaded); // single can be changed to multiple
+  // poseNet.on("pose", (results) => {
+  //   poses = results;
+
+  //   let left = poses[0].pose.leftWrist;
+  //   let right = poses[0].pose.rightWrist;
+  //   let lx, ly;
+  //   let rx, ry;
+  //   lx = map(left.x, 0, 640, 0, N * SCALE);
+  //   ly = map(left.y, 0, 640, 0, N * SCALE);
+  //   rx = map(right.x, 0, 480, 0, N * SCALE);
+  //   ry = map(right.y, 0, 480, 0, N * SCALE);
+  //   leftHand = new Hand("leftWrist", 50, lx, ly);
+  //   rightHand = new Hand("rightWrist", 150, rx, ry);
+  //   hands.push(leftHand);
+  //   hands.push(rightHand);
+  // });
 
   // mouseHand = new Hand("mouse", 250);
   // hands.push(mouseHand);
@@ -108,12 +109,36 @@ function setup() {
   seed2 = random() * 1000; 
   seed3 = random() * 1000; 
   seed4 = random() * 1000; 
+
+  // console.log(hands);
 }
 
 //Draw Function ----------------------------------------------------
 
 function draw() {
-  background(350);
+  push();
+  switch (strongestEmotion) {
+    case "fury":
+      background("#5E091A");
+      break;
+
+    case "sadness":
+      background("#D0D2D7");
+      break;
+
+    case "boredom":
+      background("#EEEDE7");
+      break;
+
+    case "excitement":
+      background("#FFFDD0 ");
+      break;
+
+    default:
+      background(255);
+      break;
+  }
+  pop();
   // if (SHOW_CAMERA){
   //   push();
   //   translate(640, 0);
@@ -123,29 +148,29 @@ function draw() {
   // }
 
   
-  if (poses[0]){
-      for (let hand of hands) {
-          switch(hand.title){
-              case "mouse": 
-                  hand.update(mouseX, mouseY); 
-                  break;
-              case "leftWrist": 
-                  if (poses[0].pose.leftWrist.confidence > 0.6){
-                        hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); 
-                        break;
-                    }
-              case "rightWrist": 
-                  if (poses[0].pose.rightWrist.confidence > 0.6) {
-                        hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); 
-                        break;
-                    }
-              default: break;
-          }
-          hand.draw(); 
-      }
-  }
+  // if (poses[0]){
+  //     for (let hand of hands) {
+  //         switch(hand.title){
+  //             case "mouse": 
+  //                 hand.update(mouseX, mouseY); 
+  //                 break;
+  //             case "leftWrist": 
+  //                 if (poses[0].pose.leftWrist.confidence > 0.6){
+  //                       hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); 
+  //                       break;
+  //                   }
+  //             case "rightWrist": 
+  //                 if (poses[0].pose.rightWrist.confidence > 0.6) {
+  //                       hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); 
+  //                       break;
+  //                   }
+  //             default: break;
+  //         }
+  //         hand.draw(); 
+  //     }
+  // }
             
-  xoff = xoff + 0.01;
+  xoff = xoff + 0.003;
   
   sadness =    noiseFromSeed(seed1, xoff);
   fury =       noiseFromSeed(seed2, xoff);
@@ -155,11 +180,12 @@ function draw() {
   emotions = { sadness, fury, boredom, excitement };
   
   console.log(emotions)
-  
-  let dt = frameRate() > 0 ? 1 / frameRate() : 0;
-            
-  // handControl();
 
+  strongestEmotion = Object.entries(emotions).reduce(
+    (prev, curr) => prev[1] > curr[1] ? prev : curr)[0];
+  
+  let dt = frameRate() > 0 ? 1 / (frameRate()) : 0;
+  
   fluid.simulate(dt);
   fluid.show(false);
   
@@ -170,11 +196,8 @@ function draw() {
     }
   }
   
-  let x = constrain(~~(mouseX/SCALE), 0, N-1);
-  let y = constrain(~~(mouseY/SCALE), 0, N-1);
-  
   if (fury > 0.7) {
-    if (random() > 0.5) {
+    if (random() < fury) {
       let randx = ~~(random() * N);
       let randy = ~~(random() * N);
       
@@ -183,7 +206,9 @@ function draw() {
       fluid.velocity[randx][randy].setHeading(random() * TWO_PI);
     } 
   }
-  
+
+  mouseControl();
+  // handControl();
   // drawTracking();
   // fluid.velocity[x][y].setHeading(random() * TWO_PI);
   // goCrazy();
@@ -199,7 +224,8 @@ class Hand {
   }
   draw(){
     push()
-    fill(this.hue, 255, 255);
+    colorMode(HSL, 255);
+    fill(this.hue, 255, 128);
     ellipse(this.position.x, this.position.y, SCALE);
     pop()
   }
@@ -378,8 +404,7 @@ class Fluid {
   }
   
   show(showVel){
-      const strongestEmotion = Object.entries(emotions).reduce(
-          (prev, curr) => prev[1] > curr[1] ? prev : curr)[0];
+
       const mainPalette = HUE[strongestEmotion];
 
       for(let i = 0; i < this.w; ++i){
@@ -387,17 +412,19 @@ class Fluid {
               let x = i * this.size;
               let y = j * this.size;
               if (this.density[i][j] > 0.0) {
-                  colorMode(HSL, 360, 100, 100 , 100);
-                  let medianColor = constrain(mainPalette + this.density[i][j] * 20, mainPalette - RANGE, mainPalette + RANGE);
-                  let hue = map(medianColor, mainPalette + this.density[i][j] * 20, mainPalette - RANGE, mainPalette + RANGE, mainPalette - RANGE, mainPalette + RANGE);
+                  colorMode(HSL, 360, 100, 100, 100);
+                  let medianColor = constrain(mainPalette + this.density[i][j] * 25, mainPalette - RANGE, mainPalette + RANGE);
+                  let hue = map(medianColor, mainPalette + this.density[i][j] * 35, mainPalette - RANGE, mainPalette + RANGE, mainPalette - RANGE, mainPalette + RANGE);
                   fill(hue, SATURATION[strongestEmotion], LIGHTNESS[strongestEmotion], this.density[i][j] * 100);
-                  rect(x, y, SCALE, SCALE);
+                  rect(x, y, SCALE, SCALE, SCALE);
               }
           }
       }
       
       if(!showVel) return;
       
+      push();
+      colorMode(RGB);
       fill(255,0,255);
       stroke(255, 0, 255);
       for(let i = 0; i < this.w; ++i){
@@ -409,6 +436,7 @@ class Fluid {
               arrow(createVector(x, y), vel);
           }
       }
+      pop();
   }
 }
 
@@ -424,7 +452,7 @@ function noiseFromSeed(seed, xoff) {
 }
 
 function wrap(x, m){
-  return abs(x + m) % m;
+  return Math.abs(x + m) % m;
 }
 
 function arrow(pos, dir){
@@ -438,48 +466,97 @@ function arrow(pos, dir){
 
 function handControl() { 
   if (hands.length > 0) {
-    let lx = constrain(floor(leftHand.position.x/SCALE), 0, N-1);
-    let ly = constrain(floor(leftHand.position.y/SCALE), 0, N-1);
-    let rx = constrain(floor(rightHand.position.x/SCALE), 0, N-1);
-    let ry = constrain(floor(rightHand.position.y/SCALE), 0, N-1);
-  
-    // console.log(leftHand.position);
-  
-    let amtLX = leftHand.position.x - prevLX;
-    let amtLY = leftHand.position.y - prevLY;
-    let amtRX = rightHand.position.x - prevRX;
-    let amtRY = rightHand.position.y - prevRY;
-
-    fluid.density[lx][ly] = 7;
-    fluid.velocity[lx][ly].add(createVector(70 * amtLX, 70 * amtLY));
-    fluid.density[rx][ry] = 7;
-    fluid.velocity[rx][ry].add(createVector(70 * amtRX, 70 * amtRY));
+      let lx = constrain(floor(leftHand.position.x/SCALE), 0, N-1);
+      let ly = constrain(floor(leftHand.position.y/SCALE), 0, N-1);
+      let rx = constrain(floor(rightHand.position.x/SCALE), 0, N-1);
+      let ry = constrain(floor(rightHand.position.y/SCALE), 0, N-1);
     
-    prevLX = leftHand.position.x;
-    prevLY = leftHand.position.y;
-    prevRX = rightHand.position.x;
-    prevRY = rightHand.position.y;
-  }
+      // console.log(leftHand.draw());
+    
+      let amtLX = leftHand.position.x - prevLX;
+      let amtLY = leftHand.position.y - prevLY;
+      let amtRX = rightHand.position.x - prevRX;
+      let amtRY = rightHand.position.y - prevRY;
+    
+      console.log(amtLX + amtLY);
+
+      fluid.density[lx][ly] = abs(amtLX + amtLY) > 10 ? 40 : 0;
+      fluid.density[rx][ry] = abs(amtRX + amtRY) > 10 ? 40 : 0;
+      
+      fluid.velocity[lx][ly].add(70 * amtLX, 70 * amtLY);
+      fluid.velocity[rx][ry].add(70 * amtRX, 70 * amtRY);
+      
+      prevLX = leftHand.position.x;
+      prevLY = leftHand.position.y;
+      prevRX = rightHand.position.x;
+      prevRY = rightHand.position.y;
+    
+      leftHand.draw()
+      rightHand.draw()
+
+      switch (strongestEmotion) {
+        case "boredom":
+          fluid.velocity[lx][ly].setHeading(fluid.velocity[lx][ly].heading() + PI);
+          fluid.velocity[rx][ry].setHeading(fluid.velocity[rx][ry].heading() + PI);
+          break;
+
+        case "sadness":
+          fluid.velocity[lx][ly].setHeading(HALF_PI);
+          fluid.velocity[rx][ry].setHeading(HALF_PI);
+          break;
+
+        case "fury": 
+          fluid.velocity[lx][ly].add(70 * amtLX, 70 * amtLY);
+          fluid.velocity[rx][ry].add(70 * amtRX, 70 * amtRY);
+          break;
+
+        case "excitement":
+
+          break;
+        default:
+          break;
+      }
+  } 
 }
 
-function mouseDragged() { 
-  // if (!mouseIsPressed) return;
-
-  let x = constrain(~~(mouseX/SCALE), 0, N-1);
-  let y = constrain(~~(mouseY/SCALE), 0, N-1);
-  
-  let amtX = mouseX - pmouseX;
-  let amtY = mouseY - pmouseY;
-  fluid.density[x][y] = 15;
-  fluid.velocity[x][y].add(force * amtX, force * amtY);
-  
-  if (boredom > 0.5) {
-    fluid.velocity[x][y].setHeading(fluid.velocity[x][y].heading() + PI);
-  }
-
-  // if (excitement > 0.5) {
+function mouseControl() { 
+  if (mouseIsPressed === true) {
+    let x = constrain(~~(mouseX/SCALE), 0, N-1);
+    let y = constrain(~~(mouseY/SCALE), 0, N-1);
     
-  // }
+    let amtX = mouseX - pmouseX;
+    let amtY = mouseY - pmouseY;
+    fluid.density[x][y] = 15;
+    
+    switch (strongestEmotion) {
+      case "boredom":
+        
+        fluid.velocity[x][y].add(force * amtX, force * amtY);
+        fluid.velocity[x][y].setHeading(fluid.velocity[x][y].heading() + PI);
+        break;
+  
+      case "sadness":
+        fluid.velocity[x][y].add(force * amtX, force * amtY);
+        fluid.velocity[x][y].setHeading(HALF_PI);
+        break;
+  
+      case "fury": 
+        force = 500;
+        fluid.velocity[x][y].add(force * amtX, force * amtY);
+        break;    
+  
+      case "excitement":  
+        force = 40000;
+        fluid.velocity[wrap(x-1, SCALE)][y].add(force, force).setHeading(2 * HALF_PI);
+        fluid.velocity[x][wrap(y-1, SCALE)].add(force, force).setHeading(3 * HALF_PI);
+        fluid.velocity[wrap(x+1, SCALE)][y].add(force, force).setHeading(4 * HALF_PI);
+        fluid.velocity[x][wrap(y+1, SCALE)].add(force, force).setHeading(5 * HALF_PI);
+        break;
+      default:
+        break;
+    }
+
+  }
 }
 
 // function excitementTrigger() {
