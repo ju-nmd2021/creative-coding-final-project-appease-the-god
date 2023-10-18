@@ -33,9 +33,9 @@ let xoff = 0.0;
 let emotions;
 let strongestEmotion;
 let force = 200;
+let VISCOSITY = 0.5;
+let DENS_DECAY = 0.7;
 
-const DENS_DECAY = 0.7;
-const VISCOSITY = sadness > 0.7 ? 0.5 - (0.2 * (1 - sadness)) : 0.5;
 
 //cited from the handpose docutmentation at https://learn.ml5js.org/#/reference/handpose
 const options = {
@@ -82,23 +82,23 @@ function setup() {
   //   predictions = results;
   // });
 
-  // poseNet = ml5.poseNet(video, options2, modelLoaded); // single can be changed to multiple
-  // poseNet.on("pose", (results) => {
-  //   poses = results;
+  poseNet = ml5.poseNet(video, options2, modelLoaded); // single can be changed to multiple
+  poseNet.on("pose", (results) => {
+    poses = results;
 
-  //   let left = poses[0].pose.leftWrist;
-  //   let right = poses[0].pose.rightWrist;
-  //   let lx, ly;
-  //   let rx, ry;
-  //   lx = map(left.x, 0, 640, 0, N * SCALE);
-  //   ly = map(left.y, 0, 640, 0, N * SCALE);
-  //   rx = map(right.x, 0, 480, 0, N * SCALE);
-  //   ry = map(right.y, 0, 480, 0, N * SCALE);
-  //   leftHand = new Hand("leftWrist", 50, lx, ly);
-  //   rightHand = new Hand("rightWrist", 150, rx, ry);
-  //   hands.push(leftHand);
-  //   hands.push(rightHand);
-  // });
+    let left = poses[0].pose.leftWrist;
+    let right = poses[0].pose.rightWrist;
+    let lx, ly;
+    let rx, ry;
+    lx = map(left.x, 0, 640, 0, N * SCALE);
+    ly = map(left.y, 0, 640, 0, N * SCALE);
+    rx = map(right.x, 0, 480, 0, N * SCALE);
+    ry = map(right.y, 0, 480, 0, N * SCALE);
+    leftHand = new Hand("leftWrist", 50, lx, ly);
+    rightHand = new Hand("rightWrist", 150, rx, ry);
+    hands.push(leftHand);
+    hands.push(rightHand);
+  });
 
   // mouseHand = new Hand("mouse", 250);
   // hands.push(mouseHand);
@@ -179,7 +179,7 @@ function draw() {
   
   emotions = { sadness, fury, boredom, excitement };
   
-  console.log(emotions)
+  // console.log(emotions)
 
   strongestEmotion = Object.entries(emotions).reduce(
     (prev, curr) => prev[1] > curr[1] ? prev : curr)[0];
@@ -201,14 +201,14 @@ function draw() {
       let randx = ~~(random() * N);
       let randy = ~~(random() * N);
       
-      fluid.density[randx][randy] = 45;
+      fluid.density[randx][randy] = 15;
       fluid.velocity[randx][randy].add(random() * force * 20, random() * force * 20);
       fluid.velocity[randx][randy].setHeading(random() * TWO_PI);
     } 
   }
 
   mouseControl();
-  // handControl();
+  handControl();
   // drawTracking();
   // fluid.velocity[x][y].setHeading(random() * TWO_PI);
   // goCrazy();
@@ -471,20 +471,11 @@ function handControl() {
       let rx = constrain(floor(rightHand.position.x/SCALE), 0, N-1);
       let ry = constrain(floor(rightHand.position.y/SCALE), 0, N-1);
     
-      // console.log(leftHand.draw());
     
       let amtLX = leftHand.position.x - prevLX;
       let amtLY = leftHand.position.y - prevLY;
       let amtRX = rightHand.position.x - prevRX;
-      let amtRY = rightHand.position.y - prevRY;
-    
-      console.log(amtLX + amtLY);
-
-      fluid.density[lx][ly] = abs(amtLX + amtLY) > 10 ? 40 : 0;
-      fluid.density[rx][ry] = abs(amtRX + amtRY) > 10 ? 40 : 0;
-      
-      fluid.velocity[lx][ly].add(70 * amtLX, 70 * amtLY);
-      fluid.velocity[rx][ry].add(70 * amtRX, 70 * amtRY);
+      let amtRY = rightHand.position.y - prevRY;  
       
       prevLX = leftHand.position.x;
       prevLY = leftHand.position.y;
@@ -496,22 +487,65 @@ function handControl() {
 
       switch (strongestEmotion) {
         case "boredom":
-          fluid.velocity[lx][ly].setHeading(fluid.velocity[lx][ly].heading() + PI);
-          fluid.velocity[rx][ry].setHeading(fluid.velocity[rx][ry].heading() + PI);
+          force = 200;
+          VISCOSITY = 0.5;
+          DENS_DECAY = 0.9;
+
+          fluid.density[lx][ly] = 6;
+          fluid.density[rx][ry] = 6;
+
+          fluid.velocity[lx][ly].add(force * amtLX, force * amtLY).setHeading(fluid.velocity[lx][ly].heading() + PI);
+          fluid.velocity[rx][ry].add(force * amtRX, force * amtRY).setHeading(fluid.velocity[rx][ry].heading() + PI);
           break;
 
         case "sadness":
-          fluid.velocity[lx][ly].setHeading(HALF_PI);
-          fluid.velocity[rx][ry].setHeading(HALF_PI);
+          force = 200;
+          VISCOSITY = 0.3;
+          DENS_DECAY = 0.8;
+
+          fluid.density[lx][ly] = 6;
+          fluid.density[rx][ry] = 6;
+
+          fluid.velocity[lx][ly].setMag(force).setHeading(HALF_PI);
+          fluid.velocity[rx][ry].setMag(force).setHeading(HALF_PI);
           break;
 
         case "fury": 
-          fluid.velocity[lx][ly].add(70 * amtLX, 70 * amtLY);
-          fluid.velocity[rx][ry].add(70 * amtRX, 70 * amtRY);
+          force = 500;
+          VISCOSITY = 0.8;
+          DENS_DECAY = 1.0;
+
+          fluid.density[lx][ly] = 6;
+          fluid.density[rx][ry] = 6;
+
+          fluid.velocity[lx][ly].add(force * amtLX, force * amtLY);
+          fluid.velocity[rx][ry].add(force * amtRX, force * amtRY);
           break;
 
         case "excitement":
+          force = 5000;
+          VISCOSITY = 0.01;
+          DENS_DECAY = 1;
 
+          fluid.density[wrap(lx-1, SCALE)][ly] = 1;
+          fluid.density[lx][wrap(ly-1, SCALE)] = 1;
+          fluid.density[wrap(lx+1, SCALE)][ly] = 1;
+          fluid.density[lx][wrap(ly+1, SCALE)] = 1;
+
+          fluid.density[wrap(rx-1, SCALE)][ry] = 1;
+          fluid.density[rx][wrap(ry-1, SCALE)] = 1;
+          fluid.density[wrap(rx+1, SCALE)][ry] = 1;
+          fluid.density[rx][wrap(ry+1, SCALE)] = 1;
+
+          fluid.velocity[wrap(lx-1, SCALE)][ly].add(force, force).setHeading(2 * HALF_PI);
+          fluid.velocity[lx][wrap(ly-1, SCALE)].add(force, force).setHeading(3 * HALF_PI);
+          fluid.velocity[wrap(lx+1, SCALE)][ly].add(force, force).setHeading(4 * HALF_PI);
+          fluid.velocity[lx][wrap(ly+1, SCALE)].add(force, force).setHeading(5 * HALF_PI);
+
+          fluid.velocity[wrap(rx-1, SCALE)][ry].add(force, force).setHeading(2 * HALF_PI);
+          fluid.velocity[rx][wrap(ry-1, SCALE)].add(force, force).setHeading(3 * HALF_PI);
+          fluid.velocity[wrap(rx+1, SCALE)][ry].add(force, force).setHeading(4 * HALF_PI);
+          fluid.velocity[rx][wrap(ry+1, SCALE)].add(force, force).setHeading(5 * HALF_PI);
           break;
         default:
           break;
@@ -526,32 +560,56 @@ function mouseControl() {
     
     let amtX = mouseX - pmouseX;
     let amtY = mouseY - pmouseY;
-    fluid.density[x][y] = 15;
     
     switch (strongestEmotion) {
       case "boredom":
+        force = 200;
+        VISCOSITY = 0.5;
+        DENS_DECAY = 0.7;
         
-        fluid.velocity[x][y].add(force * amtX, force * amtY);
-        fluid.velocity[x][y].setHeading(fluid.velocity[x][y].heading() + PI);
+        fluid.density[x][y] = 15;
+
+        fluid.velocity[x][y].add(force * amtX, force * amtY).setHeading(fluid.velocity[x][y].heading() + PI);
         break;
-  
+        
       case "sadness":
-        fluid.velocity[x][y].add(force * amtX, force * amtY);
-        fluid.velocity[x][y].setHeading(HALF_PI);
+        force = 200;
+        VISCOSITY = 0.3;
+        DENS_DECAY = 0.7;
+
+        fluid.density[x][y] = 15;
+
+        fluid.velocity[x][y].setMag(force).setHeading(HALF_PI);
         break;
-  
+        
       case "fury": 
         force = 500;
+        DENS_DECAY = 0.7;
+        VISCOSITY = 0.8;
+
+        fluid.density[x][y] = 15;
+
         fluid.velocity[x][y].add(force * amtX, force * amtY);
         break;    
-  
+        
       case "excitement":  
-        force = 40000;
+        force = 10000;
+        VISCOSITY = 0.01;
+        DENS_DECAY = 1;
+
+        fluid.density[wrap(x-1, SCALE)][y] = 5;
+        fluid.density[x][wrap(y-1, SCALE)] = 5;
+        fluid.density[wrap(x+1, SCALE)][y] = 5;
+        fluid.density[x][wrap(y+1, SCALE)] = 5;
+
         fluid.velocity[wrap(x-1, SCALE)][y].add(force, force).setHeading(2 * HALF_PI);
         fluid.velocity[x][wrap(y-1, SCALE)].add(force, force).setHeading(3 * HALF_PI);
         fluid.velocity[wrap(x+1, SCALE)][y].add(force, force).setHeading(4 * HALF_PI);
         fluid.velocity[x][wrap(y+1, SCALE)].add(force, force).setHeading(5 * HALF_PI);
+
+
         break;
+
       default:
         break;
     }
