@@ -76,28 +76,28 @@ function setup() {
     
   t = 0;
 
-  // handpose = ml5.handpose(video, options, modelLoaded);
-  // handpose.on("hand", (results) => {
-  //   predictions = results;
-  // });
+  handpose = ml5.handpose(video, options, modelLoaded);
+  handpose.on("hand", (results) => {
+    predictions = results;
+  });
 
-  // poseNet = ml5.poseNet(video, options2, modelLoaded); // single can be changed to multiple
-  // poseNet.on("pose", (results) => {
-  //   poses = results;
+  poseNet = ml5.poseNet(video, options2, modelLoaded); // single can be changed to multiple
+  poseNet.on("pose", (results) => {
+    poses = results;
     
-  //   let left = poses[0].pose.leftWrist;
-  //   let right = poses[0].pose.rightWrist;
-  //   let lx, ly;
-  //   let rx, ry;
-  //   lx = map(left.x, 0, 640, 0, N * SCALE);
-  //   ly = map(left.y, 0, 640, 0, N * SCALE);
-  //   rx = map(right.x, 0, 480, 0, N * SCALE);
-  //   ry = map(right.y, 0, 480, 0, N * SCALE);
-  //   leftHand = new Hand("leftWrist", 50, lx, ly);
-  //   rightHand = new Hand("rightWrist", 150, rx, ry);
-  //   hands.push(leftHand);
-  //   hands.push(rightHand);
-  // });
+    let left = poses[0].pose.leftWrist;
+    let right = poses[0].pose.rightWrist;
+    let lx, ly;
+    let rx, ry;
+    lx = map(left.x, 0, 640, 0, N * SCALE);
+    ly = map(left.y, 0, 640, 0, N * SCALE);
+    rx = map(right.x, 0, 480, 0, N * SCALE);
+    ry = map(right.y, 0, 480, 0, N * SCALE);
+    leftHand = new Hand("leftWrist", 50, lx, ly);
+    rightHand = new Hand("rightWrist", 150, rx, ry);
+    hands.push(leftHand);
+    hands.push(rightHand);
+  });
 
   // mouseHand = new Hand("mouse", 250);
   // hands.push(mouseHand);
@@ -122,43 +122,42 @@ function draw() {
   //   pop();
   // }
 
-  // drawTracking();
-
-  // if (poses[0]){
-  //   for (let hand of hands) {
-  //     switch(hand.title){
-  //       case "mouse": 
-  //         hand.update(mouseX, mouseY); 
-  //         break;
-  //       case "leftWrist": 
-  //         if (poses[0].pose.leftWrist.confidence > 0.6){
-  //           hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); 
-  //           break;
-  //         }
-  //       case "rightWrist": 
-  //         if (poses[0].pose.rightWrist.confidence > 0.6) {
-  //           hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); 
-  //           break;
-  //         }
-  //       default: break;
-  //     }
-  //     hand.draw(); 
-  //   }
-  // }
-
+  
+  if (poses[0]){
+      for (let hand of hands) {
+          switch(hand.title){
+              case "mouse": 
+                  hand.update(mouseX, mouseY); 
+                  break;
+              case "leftWrist": 
+                  if (poses[0].pose.leftWrist.confidence > 0.6){
+                        hand.update(poses[0].pose.leftWrist.x, poses[0].pose.leftWrist.y); 
+                        break;
+                    }
+              case "rightWrist": 
+                  if (poses[0].pose.rightWrist.confidence > 0.6) {
+                        hand.update(poses[0].pose.rightWrist.x, poses[0].pose.rightWrist.y); 
+                        break;
+                    }
+              default: break;
+          }
+          hand.draw(); 
+      }
+  }
+            
   xoff = xoff + 0.01;
-
+  
   sadness =    noiseFromSeed(seed1, xoff);
   fury =       noiseFromSeed(seed2, xoff);
   excitement = noiseFromSeed(seed3, xoff);
   boredom =    noiseFromSeed(seed4, xoff);
-
+  
   emotions = { sadness, fury, boredom, excitement };
-
+  
   console.log(emotions)
   
   let dt = frameRate() > 0 ? 1 / frameRate() : 0;
-
+            
   // handControl();
 
   fluid.simulate(dt);
@@ -166,25 +165,26 @@ function draw() {
   
   for(let i = 0; i < fluid.w; i++) {
     for(let j = 0; j < fluid.h; j++){
-        fluid.density[i][j] -= DENS_DECAY * dt;
-        fluid.velocity[i][j].mult(0.99);
+      fluid.density[i][j] -= DENS_DECAY * dt;
+      fluid.velocity[i][j].mult(0.99);
     }
   }
-
+  
   let x = constrain(~~(mouseX/SCALE), 0, N-1);
   let y = constrain(~~(mouseY/SCALE), 0, N-1);
-
+  
   if (fury > 0.7) {
     if (random() > 0.5) {
       let randx = ~~(random() * N);
       let randy = ~~(random() * N);
-
+      
       fluid.density[randx][randy] = 45;
       fluid.velocity[randx][randy].add(random() * force * 20, random() * force * 20);
       fluid.velocity[randx][randy].setHeading(random() * TWO_PI);
     } 
   }
- 
+  
+  // drawTracking();
   // fluid.velocity[x][y].setHeading(random() * TWO_PI);
   // goCrazy();
   // console.log(dt);
