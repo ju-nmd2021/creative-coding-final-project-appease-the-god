@@ -5,20 +5,31 @@
   display: block;
 }
 
+main {
+  margin-top: 2em;
+  text-align: center;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: rgb(250, 247, 242);
+}
+
 html {
   color: rgb(58, 52, 45);
 }
 
-footer {
+header {
   font-family: Arial, Helvetica, sans-serif;
-  position: absolute;
-  bottom: 0;
-  padding: 5vh;
   background-color: rgb(235, 231, 209);
   width: 100%;
   text-align: center;
 }
 
-footer h1 {
+header h1 {
   font-size: 3em;
 }
