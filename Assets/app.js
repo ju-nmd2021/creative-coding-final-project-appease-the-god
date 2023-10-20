@@ -33,8 +33,8 @@ let xoff = 0.0;
 let emotions;
 let strongestEmotion;
 let force = 200;
-let VISCOSITY = 0.5;
-let DENS_DECAY = 0.7;
+let VISCOSITY = sadness;
+let DENS_DECAY = boredom;
 
 
 //cited from the handpose docutmentation at https://learn.ml5js.org/#/reference/handpose
@@ -196,8 +196,8 @@ function draw() {
     }
   }
   
-  if (fury > 0.7) {
-    if (random() < fury) {
+  if (fury > 0.5) {
+    if (random() < 0.8) {
       let randx = ~~(random() * N);
       let randy = ~~(random() * N);
       
@@ -491,8 +491,8 @@ function handControl() {
           VISCOSITY = 0.5;
           DENS_DECAY = 0.9;
 
-          fluid.density[lx][ly] = 6;
-          fluid.density[rx][ry] = 6;
+          fluid.density[lx][ly] = 7;
+          fluid.density[rx][ry] = 7;
 
           fluid.velocity[lx][ly].add(force * amtLX, force * amtLY).setHeading(fluid.velocity[lx][ly].heading() + PI);
           fluid.velocity[rx][ry].add(force * amtRX, force * amtRY).setHeading(fluid.velocity[rx][ry].heading() + PI);
@@ -503,8 +503,8 @@ function handControl() {
           VISCOSITY = 0.3;
           DENS_DECAY = 0.8;
 
-          fluid.density[lx][ly] = 6;
-          fluid.density[rx][ry] = 6;
+          fluid.density[lx][ly] = 7;
+          fluid.density[rx][ry] = 7;
 
           fluid.velocity[lx][ly].setMag(force).setHeading(HALF_PI);
           fluid.velocity[rx][ry].setMag(force).setHeading(HALF_PI);
@@ -515,8 +515,8 @@ function handControl() {
           VISCOSITY = 0.8;
           DENS_DECAY = 1.0;
 
-          fluid.density[lx][ly] = 6;
-          fluid.density[rx][ry] = 6;
+          fluid.density[lx][ly] = 7;
+          fluid.density[rx][ry] = 7;
 
           fluid.velocity[lx][ly].add(force * amtLX, force * amtLY);
           fluid.velocity[rx][ry].add(force * amtRX, force * amtRY);
@@ -564,8 +564,6 @@ function mouseControl() {
     switch (strongestEmotion) {
       case "boredom":
         force = 200;
-        VISCOSITY = 0.5;
-        DENS_DECAY = 0.7;
         
         fluid.density[x][y] = 15;
 
@@ -574,18 +572,14 @@ function mouseControl() {
         
       case "sadness":
         force = 200;
-        VISCOSITY = 0.3;
-        DENS_DECAY = 0.7;
 
         fluid.density[x][y] = 15;
 
-        fluid.velocity[x][y].setMag(force).setHeading(HALF_PI);
+        fluid.velocity[x][y].setMag(force).setHeading(HALF_PI * sadness);
         break;
         
       case "fury": 
         force = 500;
-        DENS_DECAY = 0.7;
-        VISCOSITY = 0.8;
 
         fluid.density[x][y] = 15;
 
@@ -594,8 +588,6 @@ function mouseControl() {
         
       case "excitement":  
         force = 10000;
-        VISCOSITY = 0.01;
-        DENS_DECAY = 1;
 
         fluid.density[wrap(x-1, SCALE)][y] = 5;
         fluid.density[x][wrap(y-1, SCALE)] = 5;
