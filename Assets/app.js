@@ -196,8 +196,8 @@ function draw() {
     }
   }
   
-  if (fury > 0.5) {
-    if (random() < 0.8) {
+  if (fury > 0.6) {
+    if (random() < 0.9) {
       let randx = ~~(random() * N);
       let randy = ~~(random() * N);
       
@@ -482,8 +482,8 @@ function handControl() {
       prevRX = rightHand.position.x;
       prevRY = rightHand.position.y;
     
-      leftHand.draw()
-      rightHand.draw()
+      // leftHand.draw()
+      // rightHand.draw()
 
       switch (strongestEmotion) {
         case "boredom":
