@@ -2,7 +2,7 @@
 const SHOW_CAMERA = true;
 const PARTICLE_COUNT = 0;
 const N = 20;
-const SCALE = 30;
+const SCALE = 20;
 const HUE = { sadness: 225, fury: 1, boredom: 40, excitement: 25 }; // out of 360
 const SATURATION = { sadness: 12, fury: 100, boredom: 26, excitement: 95 }; // out of 100
 const LIGHTNESS = { sadness: 35, fury: 45, boredom: 70, excitement: 50 }; // out of 100
@@ -511,11 +511,9 @@ function handControl() {
     switch (strongestEmotion) {
       case "boredom":
         force = 200;
-        VISCOSITY = 0.5;
-        DENS_DECAY = 0.9;
 
-        fluid.density[lx][ly] = 7;
-        fluid.density[rx][ry] = 7;
+        fluid.density[lx][ly] = 14;
+        fluid.density[rx][ry] = 14;
 
         fluid.velocity[lx][ly]
           .add(force * amtLX, force * amtLY)
@@ -527,11 +525,9 @@ function handControl() {
 
       case "sadness":
         force = 200;
-        VISCOSITY = 0.3;
-        DENS_DECAY = 0.8;
 
-        fluid.density[lx][ly] = 7;
-        fluid.density[rx][ry] = 7;
+        fluid.density[lx][ly] = 14;
+        fluid.density[rx][ry] = 14;
 
         fluid.velocity[lx][ly].setMag(force).setHeading(HALF_PI);
         fluid.velocity[rx][ry].setMag(force).setHeading(HALF_PI);
@@ -539,20 +535,16 @@ function handControl() {
 
       case "fury":
         force = 500;
-        VISCOSITY = 0.8;
-        DENS_DECAY = 1.0;
 
-        fluid.density[lx][ly] = 7;
-        fluid.density[rx][ry] = 7;
+        fluid.density[lx][ly] = 14;
+        fluid.density[rx][ry] = 14;
 
         fluid.velocity[lx][ly].add(force * amtLX, force * amtLY);
         fluid.velocity[rx][ry].add(force * amtRX, force * amtRY);
         break;
 
       case "excitement":
-        force = 5000;
-        VISCOSITY = 0.01;
-        DENS_DECAY = 1;
+        force = 10000;
 
         fluid.density[wrap(lx - 1, SCALE)][ly] = 1;
         fluid.density[lx][wrap(ly - 1, SCALE)] = 1;
